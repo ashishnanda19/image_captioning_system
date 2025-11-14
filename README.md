@@ -1,4 +1,4 @@
-# Image Captioning Project
+# Image Captioning System
 
 A complete machine learning project that generates text descriptions for images using a pre-trained BLIP (Bootstrapping Language-Image Pre-training) model. This project runs entirely locally without any API calls to external services.
 
@@ -109,8 +109,8 @@ pbl/
 - **Model**: Salesforce/blip-image-captioning-base
 - **Framework**: PyTorch + Transformers (Hugging Face)
 - **Device**: Automatically uses GPU if available, falls back to CPU
-- **Max Caption Length**: 50 tokens (configurable)
-- **Beam Search**: Uses 3 beams for better quality (configurable)
+- **Max Caption Length**: 200 tokens (configurable)
+- **Beam Search**: Uses 5 beams for better quality (configurable)
 
 ## Performance
 
@@ -182,4 +182,3 @@ For issues or questions, please check:
 ---
 
 **Enjoy generating image captions! 🎉**
-
