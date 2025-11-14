@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Textify - AI Image Captioning</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #000000;
+            --bg-secondary: #1d1d1f;
+            --bg-tertiary: #2d2d2f;
+            --text-primary: #f5f5f7;
+            --text-secondary: #a1a1a6;
+            --accent: #0071e3;
+            --accent-hover: #0077ed;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            padding: 18px 0;
+            z-index: 1000;
+            border-bottom: 0.5px solid var(--border);
+            transition: background 0.3s ease;
+        }
+
+        nav:hover {
+            background: rgba(0, 0, 0, 0.85);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 400;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            margin-top: 80px;
+            padding: 140px 40px 100px;
+            text-align: center;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 113, 227, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero h1 {
+            font-size: 80px;
+            font-weight: 700;
+            letter-spacing: -3px;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #ffffff 0%, #d0d0d0 50%, #a1a1a6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+        }
+
+        .hero .subtitle {
+            font-size: 26px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-bottom: 80px;
+            letter-spacing: -0.3px;
+            line-height: 1.4;
+            max-width: 680px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Upload Section */
+        .upload-container {
+            max-width: 900px;
+            margin: 0 auto 120px;
+            padding: 0 40px;
+        }
+
+        .upload-area {
+            border: 1.5px dashed var(--border);
+            border-radius: 20px;
+            padding: 100px 40px;
+            text-align: center;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(29, 29, 31, 0.5) 100%);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            transition: left 0.5s;
+        }
+
+        .upload-area:hover::before {
+            left: 100%;
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent);
+            background: var(--bg-tertiary);
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent);
+            background: var(--bg-tertiary);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 32px;
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, rgba(45, 45, 47, 0.6) 100%);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover .upload-icon {
+            background: linear-gradient(135deg, rgba(0, 113, 227, 0.1) 0%, var(--bg-tertiary) 100%);
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .upload-text {
+            font-size: 21px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            letter-spacing: -0.3px;
+        }
+
+        .upload-hint {
+            font-size: 17px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent) 0%, #0051a2 100%);
+            color: white;
+            border: none;
+            padding: 16px 36px;
+            border-radius: 980px;
+            font-size: 17px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            letter-spacing: -0.2px;
+            box-shadow: 0 4px 20px rgba(0, 113, 227, 0.3);
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, var(--accent-hover) 0%, #0066cc 100%);
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 30px rgba(0, 113, 227, 0.4);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Preview Section */
+        .preview-section {
+            margin-top: 40px;
+            display: none;
+            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .preview-section.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 600px;
+            border-radius: 20px;
+            margin-bottom: 36px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border);
+            transition: transform 0.3s ease;
+        }
+
+        .image-preview:hover {
+            transform: scale(1.01);
+        }
+
+        .caption-section {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(29, 29, 31, 0.8) 100%);
+            padding: 48px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .caption-label {
+            font-weight: 600;
+            font-size: 17px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 13px;
+        }
+
+        .caption-text {
+            font-size: 24px;
+            font-weight: 400;
+            color: var(--text-primary);
+            line-height: 1.5;
+            letter-spacing: -0.3px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--bg-tertiary);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--text-secondary);
+            font-size: 17px;
+        }
+
+        .error {
+            background: rgba(255, 59, 48, 0.1);
+            color: #ff3b30;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 59, 48, 0.2);
+            display: none;
+            font-size: 15px;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .file-info {
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* About Section */
+        .about-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 120px 40px;
+            border-top: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 56px;
+            font-weight: 700;
+            letter-spacing: -1.5px;
+            margin-bottom: 80px;
+            text-align: center;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-bottom: 80px;
+        }
+
+        .content-card {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(29, 29, 31, 0.6) 100%);
+            padding: 44px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .content-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--accent);
+            box-shadow: 0 12px 40px rgba(0, 113, 227, 0.15);
+        }
+
+        .content-card:hover::before {
+            opacity: 1;
+        }
+
+        .card-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+        }
+
+        .card-text {
+            font-size: 17px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .how-it-works {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(29, 29, 31, 0.7) 100%);
+            padding: 64px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 64px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .how-it-works h3 {
+            font-size: 40px;
+            font-weight: 600;
+            margin-bottom: 40px;
+            letter-spacing: -1px;
+        }
+
+        .steps {
+            display: grid;
+            gap: 30px;
+        }
+
+        .step {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, var(--accent) 0%, #0051a2 100%);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 600;
+            flex-shrink: 0;
+            box-shadow: 0 4px 16px rgba(0, 113, 227, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .step:hover .step-number {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .step-content h4 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
+        }
+
+        .step-content p {
+            font-size: 17px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .tech-stack {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(29, 29, 31, 0.7) 100%);
+            padding: 64px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            margin-bottom: 80px;
+        }
+
+        .tech-stack h3 {
+            font-size: 40px;
+            font-weight: 600;
+            margin-bottom: 40px;
+            letter-spacing: -1px;
+        }
+
+        .tech-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+        }
+
+        .tech-item {
+            padding: 28px;
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, rgba(45, 45, 47, 0.5) 100%);
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .tech-item:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent);
+            background: linear-gradient(135deg, rgba(0, 113, 227, 0.1) 0%, var(--bg-tertiary) 100%);
+        }
+
+        .tech-item h4 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .tech-item p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 80px 40px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .footer-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .footer-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            letter-spacing: 0.3px;
+        }
+
+        .footer-authors {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .footer-divider {
+            width: 40px;
+            height: 1px;
+            background: var(--border);
+            margin: 24px auto;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 48px;
+            }
+
+            .hero .subtitle {
+                font-size: 21px;
+            }
+
+            .nav-container {
+                padding: 0 20px;
+            }
+
+            .nav-links {
+                gap: 20px;
+            }
+
+            .upload-container,
+            .about-section {
+                padding: 0 20px;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .how-it-works,
+            .tech-stack {
+                padding: 40px 30px;
+            }
+
+            .section-title {
+                font-size: 40px;
+            }
+        }
+
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="#" class="logo">Textify</a>
+            <div class="nav-links">
+                <a href="#upload">Upload</a>
+                <a href="#about">About</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>Textify</h1>
+        <p class="subtitle">Transform images into intelligent descriptions with advanced AI</p>
+    </section>
+
+    <section id="upload" class="upload-container">
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+            </div>
+            <div class="upload-text">Drag and drop your image here</div>
+            <div class="upload-hint">or click to browse from your device</div>
+            <input type="file" id="fileInput" class="file-input" accept="image/*">
+            <button class="btn" id="chooseImageBtn">Choose Image</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p class="loading-text">Processing image with AI...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="preview-section" id="previewSection">
+            <img id="imagePreview" class="image-preview" alt="Preview">
+            <div class="file-info" id="fileInfo"></div>
+            
+            <div class="caption-section">
+                <div class="caption-label">Generated Description</div>
+                <div class="caption-text" id="captionText">Caption will appear here...</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="about-section">
+        <h2 class="section-title">How It Works</h2>
+        
+        <div class="how-it-works">
+            <h3>Technology Overview</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Image Processing</h4>
+                        <p>Your uploaded image is processed and normalized to ensure optimal quality for analysis. The system supports multiple formats including PNG, JPEG, GIF, and WebP.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>AI Analysis</h4>
+                        <p>Our BLIP (Bootstrapping Language-Image Pre-training) model analyzes the visual content, identifying objects, scenes, actions, and contextual relationships within the image.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Caption Generation</h4>
+                        <p>The model generates a natural language description that accurately captures the essence of the image, providing meaningful context and detail.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="content-card">
+                <h3 class="card-title">Efficiency</h3>
+                <p class="card-text">Runs entirely on-device without external API calls, ensuring fast processing times and complete privacy. The optimized model architecture delivers results in seconds while maintaining high accuracy.</p>
+            </div>
+            <div class="content-card">
+                <h3 class="card-title">Privacy</h3>
+                <p class="card-text">All processing happens locally on your device. Images are never sent to external servers, ensuring your data remains completely private and secure throughout the entire process.</p>
+            </div>
+            <div class="content-card">
+                <h3 class="card-title">Accuracy</h3>
+                <p class="card-text">Powered by state-of-the-art BLIP models trained on millions of image-text pairs, delivering precise and contextually relevant descriptions across diverse image types.</p>
+            </div>
+        </div>
+
+        <div class="tech-stack">
+            <h3>Technical Architecture</h3>
+            <div class="tech-list">
+                <div class="tech-item">
+                    <h4>BLIP Model</h4>
+                    <p>Advanced vision-language model that understands both visual and textual information, enabling accurate image-to-text conversion.</p>
+                </div>
+                <div class="tech-item">
+                    <h4>PyTorch</h4>
+                    <p>Deep learning framework providing efficient model inference with GPU acceleration support for enhanced performance.</p>
+                </div>
+                <div class="tech-item">
+                    <h4>Transformers</h4>
+                    <p>Hugging Face Transformers library providing pre-trained models and optimized inference pipelines for production use.</p>
+                </div>
+                <div class="tech-item">
+                    <h4>Flask</h4>
+                    <p>Lightweight web framework enabling seamless integration between the frontend interface and AI backend processing.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="content-card">
+                <h3 class="card-title">Future Scope</h3>
+                <p class="card-text">Planned enhancements include multi-language caption support, batch processing capabilities, custom model fine-tuning, and integration with accessibility tools for enhanced user experience.</p>
+            </div>
+            <div class="content-card">
+                <h3 class="card-title">Applications</h3>
+                <p class="card-text">Ideal for content creators, accessibility tools, automated image tagging, social media management, and any workflow requiring automated image description generation.</p>
+            </div>
+            <div class="content-card">
+                <h3 class="card-title">Performance</h3>
+                <p class="card-text">Optimized for both CPU and GPU execution, with intelligent resource management ensuring smooth operation across different hardware configurations.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-title">Textify</div>
+            <div class="footer-authors">PBL project by Ashish Nanda and Amrisha Srivastava</div>
+            <div class="footer-divider"></div>
+            <p style="font-size: 13px; color: var(--text-secondary); opacity: 0.7;">AI-Powered Image Captioning System</p>
+        </div>
+    </footer>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewSection = document.getElementById('previewSection');
+        const imagePreview = document.getElementById('imagePreview');
+        const captionText = document.getElementById('captionText');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const fileInfo = document.getElementById('fileInfo');
+
+        // Click to upload
+        uploadArea.addEventListener('click', (e) => {
+            // Don't trigger if clicking the button
+            if (e.target.closest('.btn')) {
+                return;
+            }
+            fileInput.click();
+        });
+
+        // Button click handler (prevents double trigger)
+        const chooseImageBtn = document.getElementById('chooseImageBtn');
+        chooseImageBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event from bubbling to uploadArea
+            fileInput.click();
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showError('Please select a valid image file.');
+                return;
+            }
+
+            // Validate file size (16MB)
+            if (file.size > 16 * 1024 * 1024) {
+                showError('File size must be less than 16MB.');
+                return;
+            }
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                previewSection.classList.add('active');
+                fileInfo.textContent = `${file.name} • ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+                captionText.textContent = 'Generating description...';
+            };
+            reader.readAsDataURL(file);
+
+            // Upload and get caption
+            uploadAndCaption(file);
+        }
+
+        function uploadAndCaption(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            loading.classList.add('active');
+            error.classList.remove('active');
+            previewSection.classList.remove('active');
+
+            fetch('/caption', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.classList.remove('active');
+                
+                if (data.success) {
+                    captionText.textContent = data.caption;
+                    previewSection.classList.add('active');
+                } else {
+                    showError(data.error || 'Failed to generate caption.');
+                }
+            })
+            .catch(err => {
+                loading.classList.remove('active');
+                showError('Network error: ' + err.message);
+            });
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.classList.add('active');
+            setTimeout(() => {
+                error.classList.remove('active');
+            }, 5000);
+        }
+
+        // Smooth scroll for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
