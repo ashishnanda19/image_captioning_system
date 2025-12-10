@@ -151,6 +151,12 @@ caption = captioner.generate_caption("image.jpg", max_length=100)
 caption = captioner.generate_caption("image.jpg", num_beams=5)
 ```
 
+![Image1](assets/Picture3.png)
+![Image2](assets/Picture4.png)
+![Image3](assets/Picture1.png)
+![Image4](assets/Picture2.png)
+
+
 ## License
 
 This project uses the BLIP model which is licensed under BSD-3-Clause. Please refer to the original model's license for commercial use.
